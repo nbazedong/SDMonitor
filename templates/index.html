@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SD-机器-监控面板</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .server {
+            margin-bottom: 20px;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #f3f3f3;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            height: 20px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #4caf50;
+            width: 0%;
+            text-align: center;
+            color: white;
+            line-height: 20px;
+        }
+        button {
+            margin-top: 5px;
+            padding: 5px 10px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        #servers {
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .server-button {
+            padding: 5px 10px;
+            font-size: 14px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .server-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>SD-机器-监控面板</h1>
+    <div id="servers"></div>
+
+    <script>
+        const urlMap = {
+                        '101': 'http://192.168.14.101:17860',
+                        '102': 'http://192.168.14.102:17860',
+                        '115': 'http://192.168.14.115:17860',
+                        '105': 'http://192.168.14.105:17860',
+                        '241-4090': 'http://192.168.14.241:17860',
+                        '广告设计': 'http://192.168.14.7:17860',
+                        '角色原画': 'http://10.6.29.52:17860',
+                        '场景原画': 'http://10.6.29.59.7:17860'
+                    };
+
+        const statusPriority = { '运算中💻': 1, '空闲🟡': 2, '离线❌': 3 };
+
+        function redirectToServer(sign) {
+            const url = urlMap[sign];
+            if (url) window.open(url, '_blank');
+        }
+
+        function generateServerHTML(server, progress, status) {
+            const progressBarWidth = status === "运算中💻" ? `${progress * 100}%` : '0%';
+            const progressText = status === "运算中💻" ? `${(progress * 100).toFixed(1)}%` : '';
+
+            return `
+                <div class="server">
+                    <div class="server-header">
+                        <h3>${server} | ${status}</h3>
+                        <button class="server-button" onclick="redirectToServer('${server}')">访问SD-WEB</button>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: ${progressBarWidth};">
+                            ${progressText}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        let refreshInterval = 5000; // 初始为5秒
+        let intervalId;
+
+        function fetchServerStatus() {
+            $.get('/server_status', function (data) {
+                const serversDiv = $('#servers');
+                serversDiv.empty();
+
+                const serversArray = Object.keys(data).map(server => {
+                    const status = server.includes("离线")
+                        ? "离线❌"
+                        : (server.includes("运算中") ? "运算中💻" : "空闲🟡");
+
+                    return {
+                        server,
+                        progress: data[server],
+                        status
+                    };
+                });
+
+                serversArray.sort((a, b) => statusPriority[a.status] - statusPriority[b.status]);
+
+                const htmlContent = serversArray.map(({ server, progress, status }) =>
+                    generateServerHTML(server.split(' | ')[0], progress, status)
+                ).join('');
+
+                serversDiv.html(htmlContent);
+
+                // 动态调整刷新频率
+                const hasRunningServers = serversArray.some(s => s.status === "运算中💻");
+                const newInterval = hasRunningServers ? 1000 : 5000;
+
+                if (refreshInterval !== newInterval) {
+                    refreshInterval = newInterval;
+                    clearInterval(intervalId);
+                    intervalId = setInterval(fetchServerStatus, refreshInterval);
+                }
+            }).fail(function (error) {
+                console.error("Error fetching server status:", error);
+            });
+        }
+
+        intervalId = setInterval(fetchServerStatus, refreshInterval); // 初始刷新
+        fetchServerStatus(); // 立即获取一次状态
+
+    </script>
+</body>
+</html>
