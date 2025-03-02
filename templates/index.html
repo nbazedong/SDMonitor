@@ -35,9 +35,108 @@
 
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: linear-gradient(to bottom, #1a1b26, #24283b);
             min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-theme {
             color: #a9b1d6;
+            background: linear-gradient(to bottom, #1a1b26, #24283b);
+        }
+
+        body.light-theme {
+            color: #475569;
+            background: url('https://920124.xyz:59000/cgview/infinity-5404951.jpeg') fixed;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        .glass-effect {
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dark-theme .glass-effect {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .light-theme .glass-effect {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .dark-theme .server-card {
+            background: linear-gradient(145deg, rgba(67, 70, 98, 0.5), rgba(41, 42, 66, 0.5));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .light-theme .server-card {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+
+        .dark-theme .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .light-theme .stat-card {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .glass-button {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+        }
+
+        .glass-button:hover {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transform: translateY(-1px);
+        }
+
+        .glass-button:active {
+            transform: translateY(1px);
+        }
+
+        .dark-theme .glass-button {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .status-indicator {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .dark-theme .status-indicator {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+        }
+
+        .container {
+            width: 80% !important;
+            margin: 0 auto !important;
+        }
+
+        @media only screen and (max-width: 767px) {
+            .container {
+                width: 95% !important;
+            }
         }
 
         .loading-spinner {
@@ -49,20 +148,6 @@
             animation: spin 1s linear infinite;
         }
 
-        .card-gradient {
-            background: linear-gradient(145deg, rgba(67, 70, 98, 0.5), rgba(41, 42, 66, 0.5));
-            backdrop-filter: blur(10px);
-        }
-
-        .stats-card {
-            background: linear-gradient(145deg, #7c3aed, #8b5cf6);
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
         .loading-container {
             display: flex;
             flex-direction: column;
@@ -72,10 +157,9 @@
             gap: 1rem;
         }
 
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
     
@@ -112,6 +196,13 @@
                             300: '#4a5073',
                             400: '#2a2e3f',
                             500: '#1a1b26',
+                        },
+                        light: {
+                            100: '#f8fafc',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
                         }
                     }
                 }
@@ -119,7 +210,7 @@
         }
     </script>
 </head>
-<body>
+<body class="light-theme">
     <div id="root">
         <div class="loading-container">
             <div class="loading-spinner"></div>
@@ -130,13 +221,13 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        function StatsCard({ title, value, icon, trend }) {
+        function StatsCard({ title, value, icon, trend, theme }) {
             return (
-                <div className="glass-effect rounded-2xl p-4 text-white">
+                <div className={`glass-effect rounded-2xl p-4 text-white`}>
                     <div className="flex justify-between items-start">
                         <div>
-                            <h3 className="text-sm font-medium text-dark-200">{title}</h3>
-                            <p className="text-xl font-semibold mt-1 text-stats-text">{value}</p>
+                            <h3 className={`text-sm font-medium ${theme === 'dark' ? 'text-dark-200' : 'text-white/70'}`}>{title}</h3>
+                            <p className="text-xl font-semibold mt-1 text-white">{value}</p>
                         </div>
                         {trend && (
                             <div className="flex items-center gap-1 text-sm">
@@ -149,7 +240,7 @@
             );
         }
 
-        function ServerCard({ server, data }) {
+        function ServerCard({ server, data, theme }) {
             const { status, progress, system_info } = data;
             
             const statusConfig = {
@@ -238,7 +329,7 @@
                                 </span>
                             </div>
                             <div>
-                                <h3 className="text-lg font-medium text-white">{server}</h3>
+                                <h3 className={`text-lg font-medium ${theme === 'dark' ? 'text-white' : 'text-white'}`}>{server}</h3>
                             </div>
                         </div>
                     </div>
@@ -257,19 +348,19 @@
                             <div className="text-lg font-semibold text-white">
                                 {system_info?.cpu_count || '-'}
                             </div>
-                            <div className="text-xs text-dark-200">核心数</div>
+                            <div className={`text-xs ${theme === 'dark' ? 'text-dark-200' : 'text-white/70'}`}>核心数</div>
                         </div>
                         <div className={`text-center p-3 rounded-xl glass-effect ${statusConfig.bgOpacity}`}>
                             <div className="text-lg font-semibold text-white">
                                 {system_info?.cpu_speed?.toFixed(1) || '-'}
                             </div>
-                            <div className="text-xs text-dark-200">GHz</div>
+                            <div className={`text-xs ${theme === 'dark' ? 'text-dark-200' : 'text-white/70'}`}>GHz</div>
                         </div>
                         <div className={`text-center p-3 rounded-xl glass-effect ${statusConfig.bgOpacity}`}>
                             <div className="text-lg font-semibold text-white">
                                 {system_info?.arch || '-'}
                             </div>
-                            <div className="text-xs text-dark-200">位</div>
+                            <div className={`text-xs ${theme === 'dark' ? 'text-dark-200' : 'text-white/70'}`}>位</div>
                         </div>
                     </div>
 
@@ -288,15 +379,43 @@
             );
         }
 
+        function ThemeToggle({ theme, onToggle }) {
+            return (
+                <button 
+                    onClick={onToggle}
+                    className={`fixed top-4 right-4 p-2 rounded-full transition-all duration-200 ${
+                        theme === 'dark' 
+                            ? 'bg-dark-400 hover:bg-dark-300' 
+                            : 'bg-light-300/50 hover:bg-light-400/50'
+                    }`}
+                >
+                    {theme === 'dark' ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-dark-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    )}
+                </button>
+            );
+        }
+
         function App() {
             const [servers, setServers] = useState([]);
             const [refreshInterval, setRefreshInterval] = useState(5000);
             const [isLoading, setIsLoading] = useState(true);
+            const [theme, setTheme] = useState('light');
             const [stats, setStats] = useState({
                 totalServers: 0,
                 activeServers: 0,
                 totalTasks: 0
             });
+
+            useEffect(() => {
+                document.body.className = `${theme}-theme`;
+            }, [theme]);
 
             useEffect(() => {
                 const fetchData = async () => {
@@ -345,14 +464,19 @@
 
             return (
                 <div className="container mx-auto px-4 py-8">
+                    <ThemeToggle 
+                        theme={theme} 
+                        onToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
+                    />
+                    
                     <div className="flex justify-between items-center mb-12">
                         <div>
                             <h2 className="text-2xl font-bold text-white mb-2">SD-监控面板</h2>
-                            <p className="text-dark-200">实时监控服务器状态</p>
+                            <p className={theme === 'dark' ? 'text-dark-200' : 'text-white/70'}>实时监控服务器状态</p>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
-                            <span className="text-dark-100">{stats.activeServers} 台在线</span>
+                            <span className={theme === 'dark' ? 'text-dark-100' : 'text-white/70'}>{stats.activeServers} 台在线</span>
                         </div>
                     </div>
 
@@ -360,20 +484,28 @@
                         <StatsCard 
                             title="总服务器数" 
                             value={stats.totalServers}
+                            theme={theme}
                         />
                         <StatsCard 
                             title="在线服务器" 
-                            value={stats.activeServers} 
+                            value={stats.activeServers}
+                            theme={theme}
                         />
                         <StatsCard 
                             title="运行中任务" 
                             value={stats.totalTasks}
+                            theme={theme}
                         />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {servers.map(({ server, ...data }) => (
-                            <ServerCard key={server} server={server} data={data} />
+                            <ServerCard 
+                                key={server} 
+                                server={server} 
+                                data={data}
+                                theme={theme}
+                            />
                         ))}
                     </div>
                 </div>
