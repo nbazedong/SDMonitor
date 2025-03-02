@@ -6,66 +6,266 @@
     <title>SD-机器-监控面板</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
+        :root {
+            --computing-color: #fbbf24;
+            --idle-color: #22c55e;
+            --offline-color: #94a3b8;
+            --background-color: #f3f4f6;
+            --card-background: #ffffff;
+            --text-color: #1f2937;
+            --secondary-text: #6b7280;
+            --computing-bg: #fff7ed;
+            --idle-bg: #f0fdf4;
+            --offline-bg: #f4f4f5;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
+            font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
         }
-        .server {
-            margin-bottom: 20px;
-        }
-        .progress-container {
-            width: 100%;
-            background-color: #f3f3f3;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            height: 20px;
-            overflow: hidden;
-        }
-        .progress-bar {
-            height: 100%;
-            background-color: #4caf50;
-            width: 0%;
-            text-align: center;
-            color: white;
-            line-height: 20px;
-        }
-        button {
-            margin-top: 5px;
-            padding: 5px 10px;
-            border: none;
-            background-color: #007BFF;
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-        }
+
         h1 {
             text-align: center;
-            color: #333;
-            margin-bottom: 20px;
+            color: var(--text-color);
+            margin-bottom: 40px;
+            font-size: 2em;
+            font-weight: 600;
         }
+
         #servers {
-            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding: 0;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
         }
-        button:hover {
-            background-color: #0056b3;
+
+        .server {
+            background: var(--card-background);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            border: 1px solid #e5e7eb;
+            width: 100%;
+            box-sizing: border-box;
         }
+
         .server-header {
             display: flex;
             justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .server-left {
+            display: flex;
+            gap: 12px;
             align-items: center;
-            margin-bottom: 5px;
         }
+
+        .server-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-computing .server-icon {
+            background-color: #fef3c7;
+        }
+
+        .status-idle .server-icon {
+            background-color: #dcfce7;
+        }
+
+        .status-offline .server-icon {
+            background-color: #f1f5f9;
+        }
+
+        .server-title {
+            margin-bottom: 0;
+        }
+
+        .server-name {
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .server-status {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-computing .server-status {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-idle .server-status {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-offline .server-status {
+            background-color: #f1f5f9;
+            color: #475569;
+        }
+
+        .progress-section {
+            margin-bottom: 20px;
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #f3f4f6;
+            border-radius: 8px;
+            height: 8px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--computing-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 1.75rem;
+            font-weight: 500;
+            color: var(--text-color);
+            margin-bottom: 4px;
+        }
+
+        .progress-label {
+            font-size: 0.875rem;
+            color: var(--secondary-text);
+        }
+
+        .server-metrics {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .status-computing .server-metrics {
+            background-color: #fef3c7;
+        }
+
+        .status-idle .server-metrics {
+            background-color: #dcfce7;
+        }
+
+        .status-offline .server-metrics {
+            background-color: #f1f5f9;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-color);
+            margin-bottom: 2px;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--secondary-text);
+        }
+
         .server-button {
-            padding: 5px 10px;
-            font-size: 14px;
-            background-color: #007BFF;
-            color: white;
+            width: 100%;
+            height: 40px;
+            padding: 0;
+            font-size: 0.95rem;
             border: none;
-            border-radius: 4px;
+            border-radius: 10px;
             cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
         }
-        .server-button:hover {
-            background-color: #0056b3;
+
+        .status-computing .server-button {
+            background-color: var(--computing-color);
+            color: #92400e;
+        }
+
+        .status-computing .server-button:hover {
+            background-color: #f59e0b;
+            transform: scale(1.05);
+        }
+
+        .status-idle .server-button {
+            background-color: var(--idle-color);
+            color: white;
+        }
+
+        .status-idle .server-button:hover {
+            background-color: #16a34a;
+            transform: scale(1.05);
+        }
+
+        .status-offline .server-button {
+            background-color: var(--offline-color);
+            color: white;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .server:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 1400px) {
+            #servers {
+                max-width: 1100px;
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 1100px) {
+            #servers {
+                max-width: 760px;
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+
+            #servers {
+                grid-template-columns: 1fr;
+                max-width: 100%;
+            }
         }
     </style>
 </head>
@@ -75,72 +275,143 @@
 
     <script>
         const urlMap = {
-                        '101': 'http://192.168.14.101:17860',
-                        '102': 'http://192.168.14.102:17860',
-                        '115': 'http://192.168.14.115:17860',
-                        '105': 'http://192.168.14.105:17860',
-                        '241-4090': 'http://192.168.14.241:17860',
-                        '广告设计': 'http://192.168.14.7:17860',
-                        '角色原画': 'http://10.6.29.52:17860',
-                        '场景原画': 'http://10.6.29.59.7:17860'
-                    };
+            '101': 'http://192.168.14.101:17860',
+            '102': 'http://192.168.14.102:17860',
+            '115': 'http://192.168.14.115:17860',
+            '105': 'http://192.168.14.105:17860',
+            '241-4090': 'http://192.168.14.241:17860',
+            '广告设计': 'http://192.168.14.7:17860',
+            '角色原画': 'http://10.6.29.52:17860',
+            '场景原画': 'http://10.6.29.59.7:17860'
+        };
 
-        const statusPriority = { '运算中💻': 1, '空闲🟡': 2, '离线❌': 3 };
+        const statusPriority = { '运算中': 1, '空闲': 2, '离线': 3 };
 
         function redirectToServer(sign) {
             const url = urlMap[sign];
             if (url) window.open(url, '_blank');
         }
 
-        function generateServerHTML(server, progress, status) {
-            const progressBarWidth = status === "运算中💻" ? `${progress * 100}%` : '0%';
-            const progressText = status === "运算中💻" ? `${(progress * 100).toFixed(1)}%` : '';
+        function getStatusClass(status) {
+            if (status === "运算中") return "computing";
+            if (status === "空闲") return "idle";
+            return "offline";
+        }
+
+        function generateServerHTML(server, data) {
+            const { status, progress, system_info } = data;
+            const statusClass = getStatusClass(status);
+            const progressBarWidth = status === "运算中" ? `${progress * 100}%` : '0%';
+            const progressText = status === "运算中" ? `${(progress * 100).toFixed(1)}%` : '0%';
+            const buttonText = status === "离线" ? "离线" : "访问 SD-WEB";
+
+            // 从system_info中提取CPU信息，如果没有则保持现有值
+            const existingMetrics = $(`#server-${server} .server-metrics`).length > 0 
+                ? {
+                    cpuCount: $(`#server-${server} .metric-cpu-count`).text() || '-',
+                    cpuSpeed: $(`#server-${server} .metric-cpu-speed`).text() || '-',
+                    cpuArch: $(`#server-${server} .metric-cpu-arch`).text() || '-'
+                }
+                : { cpuCount: '-', cpuSpeed: '-', cpuArch: '-' };
+
+            const cpuCount = system_info?.cpu_count || existingMetrics.cpuCount;
+            const cpuSpeed = system_info?.cpu_speed?.toFixed(1) || existingMetrics.cpuSpeed;
+            const cpuArch = system_info?.arch || existingMetrics.cpuArch;
 
             return `
-                <div class="server">
+                <div id="server-${server}" class="server status-${statusClass}">
                     <div class="server-header">
-                        <h3>${server} | ${status}</h3>
-                        <button class="server-button" onclick="redirectToServer('${server}')">访问SD-WEB</button>
+                        <div class="server-left">
+                            <div class="server-icon"></div>
+                            <div class="server-title">
+                                <h3 class="server-name">${server}</h3>
+                            </div>
+                        </div>
+                        <div class="server-status">${status}</div>
                     </div>
-                    <div class="progress-container">
-                        <div class="progress-bar" style="width: ${progressBarWidth};">
-                            ${progressText}
+                    <div class="progress-section">
+                        <div class="progress-text">${progressText}</div>
+                        <div class="progress-label">处理进度</div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: ${progressBarWidth};"></div>
                         </div>
                     </div>
+                    <div class="server-metrics">
+                        <div class="metric">
+                            <div class="metric-value metric-cpu-count">${cpuCount}</div>
+                            <div class="metric-label">核心数</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value metric-cpu-speed">${cpuSpeed}</div>
+                            <div class="metric-label">GHz</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value metric-cpu-arch">${cpuArch}</div>
+                            <div class="metric-label">位</div>
+                        </div>
+                    </div>
+                    <button class="server-button" onclick="redirectToServer('${server}')" ${status === "离线" ? 'disabled' : ''}>${buttonText}</button>
                 </div>
             `;
         }
 
-        let refreshInterval = 5000; // 初始为5秒
-        let intervalId;
-
-        function fetchServerStatus() {
-            $.get('/server_status', function (data) {
-                const serversDiv = $('#servers');
-                serversDiv.empty();
-
-                const serversArray = Object.keys(data).map(server => {
-                    const status = server.includes("离线")
-                        ? "离线❌"
-                        : (server.includes("运算中") ? "运算中💻" : "空闲🟡");
-
-                    return {
-                        server,
-                        progress: data[server],
-                        status
-                    };
-                });
+        async function fetchServerStatus() {
+            try {
+                const response = await fetch('/server_status');
+                const data = await response.json();
+                
+                const serversArray = Object.entries(data).map(([server, serverData]) => ({
+                    server,
+                    ...serverData
+                }));
 
                 serversArray.sort((a, b) => statusPriority[a.status] - statusPriority[b.status]);
 
-                const htmlContent = serversArray.map(({ server, progress, status }) =>
-                    generateServerHTML(server.split(' | ')[0], progress, status)
-                ).join('');
+                // 检查是否需要完全重新渲染
+                const serversDiv = $('#servers');
+                if (serversDiv.children().length === 0) {
+                    // 首次加载，完全渲染
+                    const htmlContent = serversArray.map(serverData => 
+                        generateServerHTML(serverData.server, serverData)
+                    ).join('');
+                    serversDiv.html(htmlContent);
+                } else {
+                    // 更新现有卡片
+                    serversArray.forEach(serverData => {
+                        const serverElement = $(`#server-${serverData.server}`);
+                        if (serverElement.length) {
+                            // 更新现有卡片
+                            const newHtml = generateServerHTML(serverData.server, serverData);
+                            const newElement = $(newHtml);
+                            
+                            // 只更新变化的部分
+                            if (serverElement.attr('class') !== newElement.attr('class')) {
+                                serverElement.attr('class', newElement.attr('class'));
+                            }
+                            serverElement.find('.server-status').text(serverData.status);
+                            serverElement.find('.progress-text').text(
+                                serverData.status === "运算中" ? `${(serverData.progress * 100).toFixed(1)}%` : '0%'
+                            );
+                            serverElement.find('.progress-bar').css('width', 
+                                serverData.status === "运算中" ? `${serverData.progress * 100}%` : '0%'
+                            );
+                            
+                            // 只在有新系统信息时更新
+                            if (serverData.system_info) {
+                                serverElement.find('.metric-cpu-count').text(serverData.system_info.cpu_count || '-');
+                                serverElement.find('.metric-cpu-speed').text(
+                                    serverData.system_info.cpu_speed?.toFixed(1) || '-'
+                                );
+                                serverElement.find('.metric-cpu-arch').text(serverData.system_info.arch || '-');
+                            }
+                        } else {
+                            // 添加新卡片
+                            serversDiv.append(generateServerHTML(serverData.server, serverData));
+                        }
+                    });
+                }
 
-                serversDiv.html(htmlContent);
-
-                // 动态调整刷新频率
-                const hasRunningServers = serversArray.some(s => s.status === "运算中💻");
+                const hasRunningServers = serversArray.some(s => s.status === "运算中");
                 const newInterval = hasRunningServers ? 1000 : 5000;
 
                 if (refreshInterval !== newInterval) {
@@ -148,14 +419,17 @@
                     clearInterval(intervalId);
                     intervalId = setInterval(fetchServerStatus, refreshInterval);
                 }
-            }).fail(function (error) {
+            } catch (error) {
                 console.error("Error fetching server status:", error);
-            });
+            }
         }
 
-        intervalId = setInterval(fetchServerStatus, refreshInterval); // 初始刷新
-        fetchServerStatus(); // 立即获取一次状态
+        let refreshInterval = 5000;
+        let intervalId;
 
+        intervalId = setInterval(fetchServerStatus, refreshInterval);
+        fetchServerStatus();
     </script>
 </body>
 </html>
+

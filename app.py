@@ -23,46 +23,102 @@ URLS = {
 }
 
 # Cache to store server status
-CACHE = {}
-CACHE_TIMEOUT = 10  # Cache expiry in seconds
+PROGRESS_CACHE = {}
+SYSTEM_INFO_CACHE = {}
+PROGRESS_CACHE_TIMEOUT = 2  # 进度信息缓存2秒
+SYSTEM_INFO_CACHE_TIMEOUT = 3600  # 系统信息缓存1小时
 
 
 def fetch_progress(url):
-    """Fetch progress from a single server."""
+    """只获取进度信息"""
     try:
         response = requests.get(f'{url}/sdapi/v1/progress?skip_current_image=true', timeout=2)
-        response.raise_for_status()
-        # print(response.json().get("progress", 0))
+        if not response.ok:
+            return None
         return response.json().get("progress", 0)
     except requests.RequestException:
         return None
 
+def fetch_system_info(url):
+    """只获取系统信息"""
+    try:
+        response = requests.get(f'{url}/sdapi/v1/system-info', timeout=2)
+        if not response.ok:
+            return None
+        return response.json()
+    except requests.RequestException:
+        return None
+
+def get_cached_system_info(sign, url):
+    """获取系统信息（优先使用缓存）"""
+    now = time.time()
+    if sign in SYSTEM_INFO_CACHE:
+        cache_data = SYSTEM_INFO_CACHE[sign]
+        if now - cache_data['timestamp'] < SYSTEM_INFO_CACHE_TIMEOUT:
+            return cache_data['data']
+    
+    try:
+        system_info = fetch_system_info(url)
+        if system_info:
+            SYSTEM_INFO_CACHE[sign] = {
+                'data': system_info,
+                'timestamp': now
+            }
+            return system_info
+        elif sign in SYSTEM_INFO_CACHE:
+            # 如果获取失败但有缓存，继续使用缓存
+            return SYSTEM_INFO_CACHE[sign]['data']
+    except Exception as e:
+        print(f"Error fetching system info for {sign}: {e}")
+        if sign in SYSTEM_INFO_CACHE:
+            return SYSTEM_INFO_CACHE[sign]['data']
+    return None
 
 def server_check(signs):
-    """Fetch status for all servers."""
-    global CACHE
+    """获取所有服务器状态"""
     now = time.time()
 
-    # Fetch status using ThreadPoolExecutor
     def fetch_status(sign):
         url = URLS[sign]
-        if sign in CACHE and now - CACHE[sign]['timestamp'] < CACHE_TIMEOUT:
-            return CACHE[sign]['status']  # Use cached result
-        progress = fetch_progress(url)
-        if progress is None:
-            status = f"{sign} | 离线"
-        elif progress > 0:
-            status = f"{sign} | 运算中"
+        
+        # 检查进度信息缓存
+        if sign in PROGRESS_CACHE and now - PROGRESS_CACHE[sign]['timestamp'] < PROGRESS_CACHE_TIMEOUT:
+            progress_data = PROGRESS_CACHE[sign]
+            progress = progress_data['progress']
+            status = progress_data['status']
         else:
-            status = f"{sign} | 空闲"
-        # Cache the result
-        CACHE[sign] = {"status": status, "progress": progress, "timestamp": now}
-        return status
+            progress = fetch_progress(url)
+            if progress is None:
+                status = "离线"
+                progress = 0
+            else:
+                status = "运算中" if progress > 0 else "空闲"
+            
+            PROGRESS_CACHE[sign] = {
+                'progress': progress,
+                'status': status,
+                'timestamp': now
+            }
+        
+        # 获取系统信息（使用长期缓存）
+        system_info = None
+        if status != "离线":
+            system_info = get_cached_system_info(sign, url)
+        
+        return sign, {
+            "status": status,
+            "progress": progress,
+            "system_info": system_info
+        }
 
-    results = {}
-    for sign, result in zip(signs, executor.map(fetch_status, signs)):
-        results[result] = CACHE[sign]['progress']
-    return results
+    try:
+        results = {}
+        for sign, result in executor.map(fetch_status, signs):
+            results[sign] = result
+        return results
+    except Exception as e:
+        print(f"Error in server_check: {e}")
+        return {}
 
 
 @app.route('/server_status', methods=['GET'])
