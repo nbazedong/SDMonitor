@@ -26,7 +26,7 @@ URLS = {
 PROGRESS_CACHE = {}
 SYSTEM_INFO_CACHE = {}
 PROGRESS_CACHE_TIMEOUT = 2  # 进度信息缓存2秒
-SYSTEM_INFO_CACHE_TIMEOUT = 3600  # 系统信息缓存1小时
+SYSTEM_INFO_CACHE_TIMEOUT = 5  # 系统信息缓存5秒
 
 
 def fetch_progress(url):
@@ -42,15 +42,47 @@ def fetch_progress(url):
 def fetch_system_info(url):
     """只获取系统信息"""
     try:
-        response = requests.get(f'{url}/sdapi/v1/system-info', timeout=2)
+        # 从新的系统信息接口获取数据
+        base_url = url.replace('17860', '5001')
+        response = requests.get(f'{base_url}/api/system-info', timeout=2)
         if not response.ok:
             return None
-        return response.json()
-    except requests.RequestException:
+        data = response.json()
+        
+        # 处理返回的数据
+        system_info = {
+            'gpu_model': 'CPU Only',  # 默认值
+            'gpu_memory': 0,  # 默认值
+            'gpu_usage': 0,  # 默认值
+            'memory_total': data['memory']['total_memory'],
+            'memory_usage': data['memory']['memory_usage'],
+            'cpu_cores': data['cpu']['cpu_cores'],
+            'cpu_usage': data['cpu']['cpu_usage']
+        }
+
+        # 如果有GPU信息则更新
+        if data.get('gpu') and len(data['gpu']) > 0:
+            gpu_data = data['gpu'][0]  # 获取第一个GPU的信息
+            system_info.update({
+                'gpu_model': gpu_data['gpu_model'],
+                'gpu_memory': gpu_data['gpu_memory_total'],
+                'gpu_usage': gpu_data['gpu_memory_usage']
+            })
+
+        return system_info
+    except requests.RequestException as e:
+        print(f"Request error for {url}: {str(e)}")
+        return None
+    except Exception as e:
+        print(f"Error processing data for {url}: {str(e)}")
         return None
 
 def get_cached_system_info(sign, url):
     """获取系统信息（优先使用缓存）"""
+    # 对于特定机器不获取系统信息
+    if sign in ['场景原画', '广告设计', '角色原画']:
+        return None
+        
     now = time.time()
     if sign in SYSTEM_INFO_CACHE:
         cache_data = SYSTEM_INFO_CACHE[sign]
