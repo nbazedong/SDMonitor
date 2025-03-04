@@ -1,0 +1,10 @@
+{
+    "server1": {
+        "name": "服务器1",
+        "url": "http://localhost:17860"
+    },
+    "server2": {
+        "name": "服务器2",
+        "url": "http://localhost:17861"
+    }
+} 

@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SD-机器-监控面板</title>
     
+    <!-- 网站图标 -->
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    
     <!-- 预加载关键资源 -->
     <link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script">
     <link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script">
@@ -46,7 +49,7 @@
 
         body.light-theme {
             color: #475569;
-            background: url('https://920124.xyz:59000/cgview/infinity-5404951.jpeg') fixed;
+            background: url('/static/images/bg.jpeg') fixed;
             background-position: center;
             background-repeat: no-repeat;
             background-size: cover;
@@ -210,7 +213,7 @@
         }
     </script>
 </head>
-<body class="light-theme">
+<body class="dark-theme">
     <div id="root">
         <div class="loading-container">
             <div class="loading-spinner"></div>
@@ -219,7 +222,7 @@
     </div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useCallback } = React;
 
         function StatsCard({ title, value, icon, trend, theme }) {
             return (
@@ -240,7 +243,7 @@
             );
         }
 
-        function ServerCard({ server, data, theme }) {
+        function ServerCard({ server, data, theme, onRedirect }) {
             const { status, progress, system_info } = data;
             
             const statusConfig = {
@@ -259,7 +262,9 @@
                     gradientClass: 'from-offline-from to-offline-to',
                     bgOpacity: 'bg-offline-from/10'
                 }
-            }[status];
+            };
+
+            const currentStatus = statusConfig[status] || statusConfig['离线'];
 
             const chartRef = useRef(null);
             const chartInstance = useRef(null);
@@ -319,10 +324,10 @@
             }, [progress, status]);
 
             return (
-                <div className={`glass-effect rounded-2xl p-6 transition-all duration-300 hover:shadow-lg ${statusConfig.bgOpacity} flex flex-col h-full`}>
+                <div className={`glass-effect rounded-2xl p-6 transition-all duration-300 hover:shadow-lg ${currentStatus.bgOpacity} flex flex-col h-full`}>
                     <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${statusConfig.gradientClass} flex items-center justify-center`}>
+                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${currentStatus.gradientClass} flex items-center justify-center`}>
                                 <span className="text-white text-xs font-medium">
                                     {status === '运算中' ? '运算' : 
                                      status === '空闲' ? '空闲' : '离线'}
@@ -337,7 +342,7 @@
                     <div className="relative h-32 mb-6">
                         <canvas ref={chartRef} className="w-full h-full"></canvas>
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <span className={`text-2xl font-bold ${statusConfig.textColor}`}>
+                            <span className={`text-2xl font-bold ${currentStatus.textColor}`}>
                                 {status === '运算中' ? `${(progress * 100).toFixed(1)}%` : '0%'}
                             </span>
                         </div>
@@ -347,14 +352,14 @@
                         {/* 系统信息区域 */}
                         {system_info?.gpu_model && (
                             <div className={`flex flex-col gap-0.5 mb-6 rounded-xl overflow-hidden`}>
-                                <div className={`flex items-center justify-center px-3 py-1.5 ${statusConfig.gradientClass} bg-opacity-10 whitespace-nowrap`}>
+                                <div className={`flex items-center justify-center px-3 py-1.5 ${currentStatus.gradientClass} bg-opacity-10 whitespace-nowrap`}>
                                     <span className="text-white/90 text-xs">{system_info.gpu_model.split(' ').pop()}</span>
                                     <span className="text-white/90 text-xs mx-1.5">|</span>
                                     <span className="text-white/90 text-xs">{(system_info.gpu_memory / 1024).toFixed(1)}GB</span>
                                     <span className="text-white/90 text-xs mx-1.5">|</span>
                                     <span className="text-white/90 text-xs">{system_info.gpu_usage}%</span>
                                 </div>
-                                <div className={`flex items-center justify-center px-3 py-1.5 ${statusConfig.gradientClass} bg-opacity-10 whitespace-nowrap`}>
+                                <div className={`flex items-center justify-center px-3 py-1.5 ${currentStatus.gradientClass} bg-opacity-10 whitespace-nowrap`}>
                                     <span className="text-white/90 text-xs">{system_info.cpu_cores}核</span>
                                     <span className="text-white/90 text-xs mx-1.5">|</span>
                                     <span className="text-white/90 text-xs">{system_info.cpu_usage}%</span>
@@ -368,12 +373,12 @@
                     </div>
 
                     <button
-                        onClick={() => redirectToServer(server)}
+                        onClick={() => onRedirect(server)}
                         disabled={status === '离线'}
                         className={`w-full h-12 rounded-xl font-medium transition-all duration-200 ${
                             status === '离线' 
                                 ? 'bg-offline-from/50 text-offline-text cursor-not-allowed' 
-                                : `bg-gradient-to-r ${statusConfig.gradientClass} text-white hover:opacity-90`
+                                : `bg-gradient-to-r ${currentStatus.gradientClass} text-white hover:opacity-90`
                         }`}
                     >
                         {status === '离线' ? '离线' : '访问 SD-WEB'}
@@ -406,15 +411,82 @@
         }
 
         function App() {
-            const [servers, setServers] = useState([]);
-            const [refreshInterval, setRefreshInterval] = useState(5000);
-            const [isLoading, setIsLoading] = useState(true);
-            const [theme, setTheme] = useState('light');
-            const [stats, setStats] = useState({
-                totalServers: 0,
-                activeServers: 0,
-                totalTasks: 0
+            const [servers, setServers] = useState(() => {
+                // 尝试从localStorage获取缓存的数据
+                const cached = localStorage.getItem('sdmonitor_servers');
+                return cached ? JSON.parse(cached) : [];
             });
+            const [refreshInterval, setRefreshInterval] = useState(5000);
+            const [isLoading, setIsLoading] = useState(!localStorage.getItem('sdmonitor_servers')); // 只有在没有缓存数据时才显示加载状态
+            const [theme, setTheme] = useState('dark');
+            const [urlMap, setUrlMap] = useState(() => {
+                // 尝试从localStorage获取缓存的URL映射
+                const cached = localStorage.getItem('sdmonitor_urlmap');
+                return cached ? JSON.parse(cached) : {};
+            });
+            const [stats, setStats] = useState(() => {
+                // 尝试从localStorage获取缓存的统计数据
+                const cached = localStorage.getItem('sdmonitor_stats');
+                return cached ? JSON.parse(cached) : {
+                    totalServers: 0,
+                    activeServers: 0,
+                    totalTasks: 0
+                };
+            });
+
+            const redirectToServer = useCallback((sign) => {
+                console.log('Redirecting to server:', sign);
+                console.log('Current URL Map:', urlMap);
+                
+                const url = urlMap[sign];
+                if (!url) {
+                    console.error(`未找到服务器 ${sign} 的URL配置`);
+                    // 尝试从localStorage重新获取
+                    const cachedUrlMap = localStorage.getItem('sdmonitor_urlmap');
+                    if (cachedUrlMap) {
+                        const urls = JSON.parse(cachedUrlMap);
+                        if (urls[sign]) {
+                            console.log('Using cached URL:', urls[sign]);
+                            window.open(urls[sign], '_blank');
+                            return;
+                        }
+                    }
+                    return;
+                }
+                
+                console.log('Opening URL:', url);
+                try {
+                    const newWindow = window.open(url, '_blank');
+                    if (newWindow === null) {
+                        alert('浏览器阻止了弹出窗口，请允许弹出窗口后重试');
+                    }
+                } catch (error) {
+                    console.error('打开服务器页面失败:', error);
+                    // 作为备选方案，尝试直接修改location
+                    window.location.href = url;
+                }
+            }, [urlMap]);
+
+            // 加载服务器配置
+            useEffect(() => {
+                const loadConfig = async () => {
+                    try {
+                        const response = await fetch('/server_config');
+                        const config = await response.json();
+                        const urls = {};
+                        Object.entries(config).forEach(([key, server]) => {
+                            console.log('Loading server config:', server.name, server.url);
+                            urls[server.name] = server.url;
+                        });
+                        console.log('URL Map:', urls);
+                        setUrlMap(urls);
+                        localStorage.setItem('sdmonitor_urlmap', JSON.stringify(urls));
+                    } catch (error) {
+                        console.error("Error loading server config:", error);
+                    }
+                };
+                loadConfig();
+            }, []);
 
             useEffect(() => {
                 document.body.className = `${theme}-theme`;
@@ -436,11 +508,16 @@
                             });
                         
                         setServers(serversArray);
-                        setStats({
+                        localStorage.setItem('sdmonitor_servers', JSON.stringify(serversArray));
+                        
+                        const newStats = {
                             totalServers: serversArray.length,
                             activeServers: serversArray.filter(s => s.status !== '离线').length,
                             totalTasks: serversArray.filter(s => s.status === '运算中').length
-                        });
+                        };
+                        setStats(newStats);
+                        localStorage.setItem('sdmonitor_stats', JSON.stringify(newStats));
+                        
                         setIsLoading(false);
                         
                         const hasRunningServers = serversArray.some(s => s.status === "运算中");
@@ -456,7 +533,7 @@
                 return () => clearInterval(interval);
             }, [refreshInterval]);
 
-            if (isLoading) {
+            if (isLoading && servers.length === 0) {
                 return (
                     <div className="loading-container">
                         <div className="loading-spinner"></div>
@@ -508,27 +585,12 @@
                                 server={server} 
                                 data={data}
                                 theme={theme}
+                                onRedirect={redirectToServer}
                             />
                         ))}
                     </div>
                 </div>
             );
-        }
-
-        const urlMap = {
-            '101': 'http://192.168.14.101:17860',
-            '102': 'http://192.168.14.102:17860',
-            '115': 'http://192.168.14.115:17860',
-            '105': 'http://192.168.14.105:17860',
-            '241-4090': 'http://192.168.14.241:17860',
-            '广告设计': 'http://192.168.14.7:17860',
-            '角色原画': 'http://10.6.29.52:17860',
-            '场景原画': 'http://10.6.29.59.7:17860'
-        };
-
-        function redirectToServer(sign) {
-            const url = urlMap[sign];
-            if (url) window.open(url, '_blank');
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));

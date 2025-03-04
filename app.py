@@ -3,24 +3,41 @@ import requests
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
 import time
+import os
+import json
+from pathlib import Path
 
 app = Flask(__name__)
 
 # Thread pool for concurrent requests
 executor = ThreadPoolExecutor(max_workers=5)
 
-# Cached URLs
-URLS = {
-    '101': 'http://192.168.14.101:17860',
-    '102': 'http://192.168.14.102:17860',
-    '115': 'http://192.168.14.115:17860',
-    '105': 'http://192.168.14.105:17860',
-    '241-4090': 'http://192.168.14.241:17860',
-    # '27-4090': 'http://10.6.27.27:17860',
-    '广告设计': 'http://192.168.14.7:17860',
-    '角色原画': 'http://10.6.29.52:17860',
-    '场景原画': 'http://10.6.29.59.7:17860'
-}
+def load_server_config():
+    """从配置文件加载服务器配置"""
+    try:
+        config_path = os.getenv('CONFIG_PATH', 'config/servers.json')
+        print(f"Loading config from: {config_path}")
+        if not os.path.isfile(config_path):
+            print(f"Config file not found at {config_path}")
+            return {}, {}
+            
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+            print(f"Loaded config: {json.dumps(config, ensure_ascii=False, indent=2)}")
+            
+        urls = {}
+        for key, server in config.items():
+            print(f"Processing server: {key} -> {server['name']}: {server['url']}")
+            urls[server['name']] = server['url']
+            
+        print(f"Final URL mapping: {json.dumps(urls, ensure_ascii=False, indent=2)}")
+        return urls, config
+    except Exception as e:
+        print(f"Error loading server config: {e}")
+        return {}, {}
+
+# 从配置文件加载服务器配置
+URLS, SERVERS_CONFIG = load_server_config()
 
 # Cache to store server status
 PROGRESS_CACHE = {}
@@ -159,6 +176,10 @@ def server_status():
     data = server_check(signs)
     return jsonify(data)
 
+@app.route('/server_config')
+def server_config():
+    """提供服务器配置信息的API端点"""
+    return jsonify(SERVERS_CONFIG)
 
 @app.route('/')
 def index():

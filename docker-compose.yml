@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  sdmonitor:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./config:/app/config
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+      - CONFIG_PATH=/app/config/servers.json
+    restart: unless-stopped 
