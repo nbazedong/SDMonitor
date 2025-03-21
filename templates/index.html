@@ -18,20 +18,41 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- TailwindCSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Chart.js (延迟加载) -->
+    <!-- Chart.js -->
     <script>
+        // 使用多个备选CDN源
+        const chartJsSources = [
+            'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
+            'https://cdn.bootcdn.net/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
+            'https://npm.elemecdn.com/chart.js@4.4.1/dist/chart.umd.min.js'
+        ];
+
         window.loadChartJs = () => {
-            return new Promise((resolve) => {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-                script.onload = resolve;
-                document.head.appendChild(script);
+            return new Promise((resolve, reject) => {
+                const tryNextSource = (index) => {
+                    if (index >= chartJsSources.length) {
+                        console.error('所有Chart.js源都加载失败');
+                        reject(new Error('无法加载Chart.js'));
+                        return;
+                    }
+
+                    const script = document.createElement('script');
+                    script.src = chartJsSources[index];
+                    script.onload = resolve;
+                    script.onerror = () => {
+                        console.warn(`Chart.js源 ${chartJsSources[index]} 加载失败，尝试下一个源`);
+                        tryNextSource(index + 1);
+                    };
+                    document.head.appendChild(script);
+                };
+
+                tryNextSource(0);
             });
         };
     </script>
+    
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
