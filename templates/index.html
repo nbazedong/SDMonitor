@@ -284,17 +284,22 @@
                     }
 
                     const ctx = chartRef.current.getContext('2d');
+                    const progressValue = status === '运算中' ? progress : 0;
                     chartInstance.current = new Chart(ctx, {
                         type: 'doughnut',
                         data: {
+                            labels: ['Progress', 'Remaining'],
                             datasets: [{
-                                data: [progress * 100, 100 - progress * 100],
+                                data: [progressValue * 100, 100 - (progressValue * 100)],
                                 backgroundColor: [
                                     status === '运算中' ? '#22c55e' : 
                                     status === '空闲' ? '#3B82F6' : '#4b6584',
                                     'rgba(255, 255, 255, 0.1)'
                                 ],
-                                borderWidth: 0
+                                borderWidth: 0,
+                                borderRadius: 5,
+                                circumference: 360,
+                                rotation: -90
                             }]
                         },
                         options: {
@@ -302,11 +307,15 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             animation: {
-                                duration: 600
+                                duration: 600,
+                                easing: 'easeOutQuart'
                             },
                             plugins: {
                                 legend: {
                                     display: false
+                                },
+                                tooltip: {
+                                    enabled: false
                                 }
                             }
                         }
